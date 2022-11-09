@@ -86,7 +86,6 @@ const run = async() => {
         })
 
         app.patch('/editreview/:id', async(req, res) => {
-            console.log(req.body)
             const id = req.params.id
             const editedReview = req.body.editedReview
             const query = {_id: ObjectId(id)}
