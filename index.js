@@ -12,20 +12,7 @@ app.get('/', (req, res) => {
     res.send('data is loading')
 })
 
-function verifyJWT(req, res, next) {
-    const accessToken = req.headers.authorization
-    if(!accessToken){
-        return res.status(401).send({message: 'unauthorized access'})
-    }
-    const token = accessToken.split(' ')[1]
-    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
-        if(err){
-            return res.status(401).send({message: 'unauthorized access'})
-        }
-         req.decoded = decoded 
-         next()
-      });
-}
+
 
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@user1.istzhai.mongodb.net/?retryWrites=true&w=majority`;
@@ -72,12 +59,9 @@ const run = async() => {
             res.send(result)
         })
 
-        app.get('/myreviews', verifyJWT, async(req, res)=> {
-            const decodedUser = req.decoded.user
+        app.get('/myreviews', async(req, res)=> {
             const email = req.query.email
-            if(decodedUser !== email){
-                return res.status(403).send({message: 'forbidden'})
-            }
+
             const query = {userEmail: email}
             const cursor = reviewsCollection.find(query)
             const result = await cursor.toArray()
