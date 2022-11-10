@@ -2,6 +2,7 @@ const express = require('express')
 const app = express()
 require("dotenv").config();
 const cors = require('cors')
+const jwt = require('jsonwebtoken');
 const port = process.env.PORT || 5000
 
 app.use(express.json())
@@ -11,7 +12,20 @@ app.get('/', (req, res) => {
     res.send('data is loading')
 })
 
-
+function verifyJWT(req, res, next) {
+    const accessToken = req.headers.authorization
+    if(!accessToken){
+        return res.status(401).send({message: 'unauthorized access'})
+    }
+    const token = accessToken.split(' ')[1]
+    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+        if(err){
+            return res.status(401).send({message: 'unauthorized access'})
+        }
+         req.decoded = decoded 
+         next()
+      });
+}
 
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@user1.istzhai.mongodb.net/?retryWrites=true&w=majority`;
@@ -58,8 +72,12 @@ const run = async() => {
             res.send(result)
         })
 
-        app.get('/myreviews', async(req, res)=> {
+        app.get('/myreviews', verifyJWT, async(req, res)=> {
+            const decodedUser = req.decoded.user
             const email = req.query.email
+            if(decodedUser !== email){
+                return res.status(403).send({message: 'forbidden'})
+            }
             const query = {userEmail: email}
             const cursor = reviewsCollection.find(query)
             const result = await cursor.toArray()
@@ -78,6 +96,12 @@ const run = async() => {
             res.send(result)
         })
 
+        app.post('/jwt', (req, res)=> {
+            const user = req.body
+            const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' })
+            res.send({token})
+        })
+
         app.delete('/delete/:id', async(req, res)=> {
             const id = req.params.id;
             const query = {_id: ObjectId(id)}
@@ -93,6 +117,8 @@ const run = async() => {
             const result = await reviewsCollection.updateOne(query, update)
             res.send(result)
         })
+
+
 
     }
     finally{
