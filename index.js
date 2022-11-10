@@ -68,6 +68,7 @@ const run = async() => {
             res.send(result)
         })
 
+
         app.post('/review', async(req, res) => {
             const review = req.body;
             const result = await reviewsCollection.insertOne(review)
@@ -78,12 +79,6 @@ const run = async() => {
             const service = req.body;
             const result = await servicesCollection.insertOne(service)
             res.send(result)
-        })
-
-        app.post('/jwt', (req, res)=> {
-            const user = req.body
-            const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' })
-            res.send({token})
         })
 
         app.delete('/delete/:id', async(req, res)=> {
