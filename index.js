@@ -12,7 +12,20 @@ app.get('/', (req, res) => {
     res.send('data is loading')
 })
 
-
+function verifyJWT(req, res, next) {
+    const accessToken = req.headers.authorization
+    if(!accessToken){
+        return res.status(401).send({message: 'unauthorized access'})
+    }
+    const token = accessToken.split(' ')[1]
+    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+        if(err){
+            return res.status(401).send({message: 'unauthorized access'})
+        }
+         req.decoded = decoded 
+         next()
+      });
+}
 
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@user1.istzhai.mongodb.net/?retryWrites=true&w=majority`;
@@ -54,14 +67,18 @@ const run = async() => {
         app.get('/reviews', async(req, res) => {
             const id = req.query.id
             const query = {serviceId: id}
-            const cursor = reviewsCollection.find(query)
+            const cursor = reviewsCollection.find(query).sort({time: -1})
             const result = await cursor.toArray()
             res.send(result)
         })
 
-        app.get('/myreviews', async(req, res)=> {
+        app.get('/myreviews', verifyJWT, async(req, res)=> {
+            const decodedEmail = req.decoded.email
             const email = req.query.email
 
+            if(decodedEmail !== email){
+                return res.status(403).send({message: 'forbidden'})
+            }
             const query = {userEmail: email}
             const cursor = reviewsCollection.find(query)
             const result = await cursor.toArray()
@@ -73,6 +90,12 @@ const run = async() => {
             const review = req.body;
             const result = await reviewsCollection.insertOne(review)
             res.send(result)
+        })
+
+        app.post('/jwt', (req, res)=> {
+            const email = req.body
+            const token = jwt.sign(email, process.env.ACCESS_TOKEN_SECRET, {expiresIn: '1h'})
+            res.send({token})
         })
 
         app.post('/service', async(req, res)=> {
