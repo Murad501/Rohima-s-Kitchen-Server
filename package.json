@@ -1,12 +1,6 @@
 {
   "name": "server-rohimas-kitchen",
   "version": "1.0.0",
-  "builds": [
-    {
-      "src": "package.json", 
-      "use": "vercel-sapper"
-    }
-  ],
   "description": "",
   "main": "index.js",
   "scripts": {
